@@ -1,0 +1,68 @@
+#
+# configuration de tests avec authentification 'simple'
+# les usagers (et leur password) sont stockés directement dans la configuration
+# voir le vrai fichier pour les commentaires plus complets
+proxy:
+  title: Civilia - clients
+  logo-url: http://www.civilia.ca/wp-content/uploads/2019/09/Civi-crea-blanc-e1568158016812-600x117.png
+  landing-page: /
+  heartbeat-rate: 10000
+  heartbeat-timeout: 60000
+  port: 8090
+  bind-address: 127.0.0.1
+ 
+  # Docker configuration
+  docker:
+    cert-path: /home/none
+    url: http://localhost:2375
+    port-range-start: 20000
+
+  # Example: 'simple' authentication configuration
+  admin-groups: civilia
+  users:
+  - name: mradmin
+    password: administrateur
+    groups: civilia
+  - name: montreal
+    password: mtlpasswd 
+    groups: clients
+  - name: quebec
+    password: qcpasswd
+    groups: clients
+  
+    
+  specs:
+  - id: 01_hello
+    display-name: Demo app, visible par tous
+    description: Application which demonstrates the basics of a Shiny app
+    container-cmd: ["R", "-e", "shinyproxy::run_01_hello()"]
+    container-image: openanalytics/shinyproxy-demo
+    access-groups: [civilia, clients]
+  - id: 02_hello
+    display-name: Demo app 2, visible par civilia seulement
+    description: Application demonstrates the basics of a Shiny app for different groupset
+    container-cmd: ["R", "-e", "shinyproxy::run_01_hello()"]
+    container-image: openanalytics/shinyproxy-demo
+    access-groups: [civilia]
+  - id: 06_tabsets
+    display-name: Demo app 3, visible par client = groupe mtl seulement
+    container-cmd: ["R", "-e", "shinyproxy::run_06_tabsets()"]
+    container-image: openanalytics/shinyproxy-demo
+    access-groups: [civilia, mtl]
+  - id: mytemplate
+    display-name: Demo app 3, visible par client = groupe quebec seulement
+    description: Application which demonstrates the basics of a Shiny app
+    container-cmd: ["R", "-e", "shinyproxy::run_01_hello()"]
+    container-image: openanalytics/shinyproxy-demo
+    access-groups: [civilia, quebec]
+
+# need this for openid behind nginx proxy 
+# https://www.shinyproxy.io/security/#https-ssl-tls
+server:
+  useForwardHeaders: true
+
+logging:
+  file: /var/log/shinyproxy/shinyproxy.log
+  container-log-path: /var/log/shinyproxy/container-logs
+
+

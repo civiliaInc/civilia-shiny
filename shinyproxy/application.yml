@@ -1,0 +1,91 @@
+proxy:
+  title: Civilia - clients
+  # Le logo devrait idéalement être servi lui aussi par https pour éviter des avertissements du navigateur
+  logo-url: http://www.civilia.ca/wp-content/uploads/2019/09/Civi-crea-blanc-e1568158016812-600x117.png
+  landing-page: /
+  heartbeat-rate: 10000
+  heartbeat-timeout: 60000
+  # On utilise un autre port que celui par defaut parce que tout le monde veut le port 8080
+  # IMPORTANT: Ajuster la configuration de nginx si vous changez ceci!
+  port: 8090
+  # on démarre en utilisant le loopback pour ne pas exposer shinyproxy directement sans https
+  # simplement commenter ou remplacer par la valeur par défaut (0.0.0.0) si vous voulez tester
+  bind-address: 127.0.0.1
+ 
+  # Docker configuration
+  docker:
+    cert-path: /home/none
+    url: http://localhost:2375
+    port-range-start: 20000
+
+  authentication: openid
+  openid:
+    # Les URLs pour ces valeurs sont disponibles dans Auth0 dans :
+    #  Applications => yourappname => Settings (tout en bas): Advanced Settings => Endpoints
+    auth-url: https://dev-nzvjbjpj.eu.auth0.com/authorize
+    token-url: https://dev-nzvjbjpj.eu.auth0.com/oauth/token
+    jwks-url: https://dev-nzvjbjpj.eu.auth0.com/.well-known/jwks.json
+    # Le logout-url m'a donné pas mal de difficulté. 
+    #  La syntaxe avec le returnTo me donnait comme erreur que l'URL n'était pas permis et me pointait
+    #  vers une page qui ne semble plus exister dans les settings de l'app... Un bug?
+    # Par contre, si on donne le client_id Auth0 va rediriger vers la première adresse dans la liste des logout-url
+    # ce qui me semble approprié pour notre usage ici
+    #logout-url: https://dev-nzvjbjpj.eu.auth0.com/v2/logout?returnTo=http%3A%2F%2Fwww.civilia.ca
+    logout-url: https://dev-nzvjbjpj.eu.auth0.com/v2/logout?client_id=hvwSN364Au1pmHt1It49aiszj6SEwZjj
+    # le nom n'a pas besoin de pointer vers une vrai URL
+    roles-claim: https://shinyproxy.io/shinyproxy_roles
+    
+    # disponible dans la section Settings de l'application
+    client-id: hvwSN364Au1pmHt1It49aiszj6SEwZjj
+    # ATTENTION: SECRET! 
+    client-secret: xReQkCEk-Xxj79re4SqQxFax9KBPUFtO_eayFaIhXgqg9qGXbz7VJev5Erx8U2ne
+
+  # Désigne le groupe qui sera "admin" ; donne accès à la page affichant la liste des containers en activité...
+  admin-groups: civilia
+   
+  # Déclaration des applications disponibles. Voir la documentation de Shinyproxy pour plus de détails
+  specs:
+  # - id: id de l'app. Devrait être unique dans la liste
+  #   display-name: Nom de l'app dans la liste
+  #   description:  description longue
+  #   container-cmd: ["R", "-e", "shinyproxy::run_01_hello()"]
+  #   container-image: openanalytics/shinyproxy-demo
+  #   groupes qui ont access a cette app. Attention, ces groupes doivent correspondre aux groupes assignés dans Auth0
+  #   access-groups: [civilia, clients]
+  - id: 01_hello
+    display-name: Demo app, visible par tous
+    description: Application which demonstrates the basics of a Shiny app
+    container-cmd: ["R", "-e", "shinyproxy::run_01_hello()"]
+    container-image: openanalytics/shinyproxy-demo
+    access-groups: [civilia, clients]
+  - id: 02_hello
+    display-name: Demo app 2, visible par civilia seulement
+    description: Application demonstrates the basics of a Shiny app for different groupset
+    container-cmd: ["R", "-e", "shinyproxy::run_01_hello()"]
+    container-image: openanalytics/shinyproxy-demo
+    access-groups: [civilia]
+  - id: 06_tabsets
+    display-name: Demo app 3, visible par client = groupe mtl seulement
+    container-cmd: ["R", "-e", "shinyproxy::run_06_tabsets()"]
+    container-image: openanalytics/shinyproxy-demo
+    access-groups: [civilia, mtl]
+  - id: mytemplate
+    display-name: Demo app 3, visible par client = groupe quebec seulement
+    description: Application which demonstrates the basics of a Shiny app
+    container-cmd: ["R", "-e", "shinyproxy::run_01_hello()"]
+    container-image: openanalytics/shinyproxy-demo
+    access-groups: [civilia, quebec]
+
+# On a besoin de cette configuration pour utiliser openid derriere le proxy nginx
+# https://www.shinyproxy.io/security/#https-ssl-tls
+server:
+  useForwardHeaders: true
+
+# On force le logging vers des fichiers
+# idéalement il faudrait configurer une rotation (par exemple avec logrotate) pour éviter
+# de remplir le disque!
+logging:
+  file: /var/log/shinyproxy/shinyproxy.log
+  container-log-path: /var/log/shinyproxy/container-logs
+
+
